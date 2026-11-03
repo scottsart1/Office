@@ -48,6 +48,19 @@ public final class VisitStore {
         } catch (Exception ignored) {return new JSONArray();}
     }
     public static synchronized void setRecords(Context c,JSONArray arr) {pref(c).edit().putString(RECORDS,arr.toString()).commit();CheckInWidget.refreshAll(c);}
+    public static synchronized boolean deleteRecord(Context c,String id) {
+        if (id==null || id.isEmpty()) return false;
+        JSONArray current=getRecords(c),updated=new JSONArray();
+        boolean removed=false;
+        for (int i=0;i<current.length();i++) {
+            JSONObject row=current.optJSONObject(i);
+            if (row==null) continue;
+            if (!removed && id.equals(row.optString("id"))) {removed=true;continue;}
+            updated.put(row);
+        }
+        if (removed) setRecords(c,updated);
+        return removed;
+    }
     public static synchronized void resetRecords(Context c) {pref(c).edit().remove(RECORDS).commit();getRecords(c);CheckInWidget.refreshAll(c);}
     public static String today() {synchronized(DATE) {return DATE.format(Calendar.getInstance().getTime());}}
     private static boolean weekday(Calendar c) {int d=c.get(Calendar.DAY_OF_WEEK);return d!=Calendar.SATURDAY&&d!=Calendar.SUNDAY;}

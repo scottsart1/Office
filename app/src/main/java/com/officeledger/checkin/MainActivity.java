@@ -1,12 +1,15 @@
 package com.officeledger.checkin;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.webkit.JavascriptInterface;
+import android.webkit.JsResult;
+import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
@@ -29,6 +32,22 @@ public class MainActivity extends Activity {
         web.getSettings().setAllowFileAccess(true);
         web.getSettings().setAllowContentAccess(true);
         web.addJavascriptInterface(new Bridge(),"OfficeAndroid");
+        // Expose JavaScript confirmations in Android's embedded WebView.
+        web.setWebChromeClient(new WebChromeClient(){
+            @Override public boolean onJsConfirm(WebView view,String url,String message,JsResult result) {
+                new AlertDialog.Builder(MainActivity.this)
+                    .setMessage(message).setNegativeButton("Cancel",(dialog,which)->result.cancel())
+                    .setPositiveButton("Confirm",(dialog,which)->result.confirm())
+                    .setOnCancelListener(dialog->result.cancel()).show();
+                return true;
+            }
+            @Override public boolean onJsAlert(WebView view,String url,String message,JsResult result) {
+                new AlertDialog.Builder(MainActivity.this)
+                    .setMessage(message).setPositiveButton("OK",(dialog,which)->result.confirm())
+                    .setOnCancelListener(dialog->result.confirm()).show();
+                return true;
+            }
+        });
         web.setWebViewClient(new WebViewClient(){
             @Override public void onPageFinished(WebView view,String url) {refreshWeb();}
             @Override public boolean shouldOverrideUrlLoading(WebView view,String url) {return !url.startsWith("file:///android_asset/");}
@@ -49,6 +68,17 @@ public class MainActivity extends Activity {
             ComponentName provider=new ComponentName(MainActivity.this,CheckInWidget.class);
             if(mgr!=null&&mgr.isRequestPinAppWidgetSupported())mgr.requestPinAppWidget(provider,null,null);
             else message("Long-press your Home screen → Widgets → Office Ledger");
+        });}
+        @JavascriptInterface public void confirmDelete(String id,String date){runOnUiThread(()->{
+            new AlertDialog.Builder(MainActivity.this)
+                .setTitle("Delete office record?")
+                .setMessage("Permanently remove the " + date + " entry? This cannot be undone. You can export a backup before deleting.")
+                .setNegativeButton("Cancel",(dialog,which)->{})
+                .setPositiveButton("Delete",(dialog,which)->{
+                    boolean removed=VisitStore.deleteRecord(MainActivity.this,id);
+                    refreshWeb();
+                    message(removed?"Office record deleted":"Record not found");
+                }).show();
         });}
         @JavascriptInterface public void importJson(){runOnUiThread(()->{
             Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("application/json");
