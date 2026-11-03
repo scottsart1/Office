@@ -10,6 +10,10 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -19,6 +23,7 @@ public final class VisitStore {
     private static final String PREF = "office_ledger_private_v1";
     private static final String RECORDS = "records";
     private static final String LAST = "lastCheckIn";
+    private static final String VIEW = "policyWidgetView";
     private static final SimpleDateFormat DATE = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
     private static final SimpleDateFormat TIME = new SimpleDateFormat("HH:mm", Locale.US);
     private static final SimpleDateFormat PRETTY = new SimpleDateFormat("EEE, MMM d · h:mm a", Locale.US);
@@ -101,6 +106,110 @@ public final class VisitStore {
         }
         return unique.size();
     }
+
+    /**
+     * The app's selected policy view is shared with the home-screen widget.
+     * The as-of date follows the real calendar only if the user selected Today.
+     */
+    public static synchronized void setDisplaySettings(Context context,String raw) {
+        try {
+            JSONObject input=new JSONObject(raw),view=new JSONObject();
+            String mode=input.optString("mode","official");
+            view.put("mode","rolling".equals(mode)?"rolling":"official");
+            view.put("cycle",input.optString("cycle","2026-12-02"));
+            String asof=input.optString("asof",today());
+            try {LocalDate.parse(asof);} catch(Exception e) {asof=today();}
+            view.put("asof",asof);
+            view.put("followToday",asof.equals(today()));
+            view.put("threshold",Math.max(0,input.optInt("threshold",0)));
+            view.put("chicago",input.optBoolean("chicago",true));
+            String next=view.toString(),old=pref(context).getString(VIEW,null);
+            if(!next.equals(old)) {
+                pref(context).edit().putString(VIEW,next).commit();
+                CheckInWidget.refreshAll(context);
+            }
+        } catch(Exception ignored) { }
+    }
+
+    private static String[] cycleDates(String key) {
+        switch(key) {
+            case "2026-01-28":return new String[]{"2025-10-20","2026-01-16"};
+            case "2026-02-25":return new String[]{"2025-11-17","2026-02-13"};
+            case "2026-03-25":return new String[]{"2025-12-15","2026-03-13"};
+            case "2026-04-29":return new String[]{"2026-01-19","2026-04-17"};
+            case "2026-05-27":return new String[]{"2026-02-16","2026-05-15"};
+            case "2026-06-24":return new String[]{"2026-03-16","2026-06-12"};
+            case "2026-07-29":return new String[]{"2026-04-20","2026-07-17"};
+            case "2026-08-26":return new String[]{"2026-05-18","2026-08-14"};
+            case "2026-09-30":return new String[]{"2026-06-22","2026-09-18"};
+            case "2026-10-28":return new String[]{"2026-07-20","2026-10-16"};
+            default:return new String[]{"2026-08-17","2026-11-13"};
+        }
+    }
+    public static final class WidgetSummary {
+        public final int count;
+        public final String subtitle;
+        public WidgetSummary(int count,String subtitle) {
+            this.count=count;this.subtitle=subtitle;
+        }
+    }
+    private static String shortDate(LocalDate day) {
+        return day.getMonth().toString().substring(0,3).charAt(0)+
+               day.getMonth().toString().substring(1,3).toLowerCase(Locale.US)+
+               " "+day.getDayOfMonth();
+    }
+    /**
+     * Parity with the HTML uniqueDays(): combine records per date/office,
+     * apply the McLean-only minimum-duration comparison, then deduplicate dates.
+     */
+    public static synchronized WidgetSummary widgetSummary(Context context) {
+        JSONObject view;
+        try {view=new JSONObject(pref(context).getString(VIEW,"{}"));}
+        catch(Exception e) {view=new JSONObject();}
+        String mode=view.optString("mode","official");
+        boolean chicago=view.optBoolean("chicago",true);
+        int threshold=Math.max(0,view.optInt("threshold",0));
+        String date=view.optBoolean("followToday",true)?today():view.optString("asof",today());
+        LocalDate through;
+        try {through=LocalDate.parse(date);}
+        catch(Exception e) {through=LocalDate.now();}
+
+        LocalDate start,end;
+        if("rolling".equals(mode)) {start=through.minusDays(90);end=through;}
+        else {
+            String[] range=cycleDates(view.optString("cycle","2026-12-02"));
+            start=LocalDate.parse(range[0]);end=LocalDate.parse(range[1]);
+        }
+        LocalDate stop=through.isBefore(end)?through:end;
+        Map<String,Double> officeDurations=new HashMap<>();
+        JSONArray arr=getRecords(context);
+        for(int i=0;i<arr.length();i++) {
+            JSONObject row=arr.optJSONObject(i);
+            if(row==null||row.optDouble("credits",0)<=0)continue;
+            String ds=row.optString("date","");
+            LocalDate day;
+            try {day=LocalDate.parse(ds);}catch(DateTimeParseException e){continue;}
+            if(day.isBefore(start)||day.isAfter(stop)||day.getDayOfWeek().getValue()>5||EXCLUSIONS.contains(ds))continue;
+            String office=row.optString("office","McLean HQ");
+            String key=ds+"|"+office;
+            officeDurations.put(key,officeDurations.getOrDefault(key,0d)+Math.max(0,row.optDouble("duration",0)));
+        }
+        Set<String> unique=new HashSet<>();
+        for(Map.Entry<String,Double> entry:officeDurations.entrySet()) {
+            String key=entry.getKey();
+            String ds=key.substring(0,10),office=key.substring(11);
+            if("Chicago".equals(office)&&!chicago)continue;
+            if("McLean HQ".equals(office)&&entry.getValue()<threshold)continue;
+            unique.add(ds);
+        }
+        String subtitle="rolling".equals(mode)?
+            "Rolling 13 weeks · through "+shortDate(through):
+            "Official review · "+shortDate(start)+"–"+shortDate(end);
+        if(threshold>0)subtitle+=" · "+threshold+"m+";
+        if(!chicago)subtitle+=" · Chicago off";
+        return new WidgetSummary(unique.size(),subtitle);
+    }
+
     /** Import old HTML backup JSON; preserve widget check-ins not already represented by the import. */
     public static synchronized int importBackup(Context c,String json) throws JSONException {
         Object parsed=new org.json.JSONTokener(json).nextValue();

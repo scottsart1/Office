@@ -61,6 +61,7 @@ public class MainActivity extends Activity {
     private void message(String s){runOnUiThread(()->Toast.makeText(this,s,Toast.LENGTH_LONG).show());}
     final class Bridge {
         @JavascriptInterface public String getRecords(){return VisitStore.getRecords(MainActivity.this).toString();}
+        @JavascriptInterface public void setDisplaySettings(String json){VisitStore.setDisplaySettings(MainActivity.this,json);}
         @JavascriptInterface public void setRecords(String raw){try{VisitStore.setRecords(MainActivity.this,new JSONArray(raw));}catch(JSONException e){message("Could not save changes");}}
         @JavascriptInterface public String recordToday(){return VisitStore.recordToday(MainActivity.this);}
         @JavascriptInterface public void pinWidget(){runOnUiThread(()->{

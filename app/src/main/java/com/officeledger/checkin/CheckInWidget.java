@@ -20,7 +20,9 @@ public class CheckInWidget extends AppWidgetProvider {
     }
     private static void render(Context ctx,AppWidgetManager mgr,int id) {
         RemoteViews views=new RemoteViews(ctx.getPackageName(),R.layout.widget_office);
-        views.setTextViewText(R.id.widgetCount,VisitStore.rolling13Weeks(ctx)+" / 20");
+        VisitStore.WidgetSummary summary=VisitStore.widgetSummary(ctx);
+        views.setTextViewText(R.id.widgetCount,summary.count+" / 20");
+        views.setTextViewText(R.id.widgetSubtitle,summary.subtitle);
         views.setTextViewText(R.id.widgetLast,VisitStore.lastStatus(ctx));
         Intent action=new Intent(ctx,CheckInWidget.class);action.setAction(MARK);
         PendingIntent pi=PendingIntent.getBroadcast(ctx,42,action,PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);

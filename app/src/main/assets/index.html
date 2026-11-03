@@ -59,7 +59,7 @@ let records=(()=>{try{if(window.OfficeAndroid){const data=JSON.parse(OfficeAndro
 if(!readLocal('office-ledger-policy-oct24-v1')){for(const r of records)if(r.date==='2026-10-24'&&r.office==='McLean HQ')r.credits=0;storeLocal(KEY,JSON.stringify(records));storeLocal('office-ledger-policy-oct24-v1','ok')}
 let settings={mode:'official',cycle:'2026-12-02',asof:isoToday(),threshold:0,chicago:true};try{const x=JSON.parse(readLocal(POLICY_SETTINGS));if(x&&typeof x==='object')settings={...settings,...x}}catch(_){}
 let calMonth=settings.asof.slice(0,7);
-function save(){storeLocal(KEY,JSON.stringify(records));storeLocal(POLICY_SETTINGS,JSON.stringify(settings));if(window.OfficeAndroid)OfficeAndroid.setRecords(JSON.stringify(records))}
+function save(){storeLocal(KEY,JSON.stringify(records));storeLocal(POLICY_SETTINGS,JSON.stringify(settings));if(window.OfficeAndroid){OfficeAndroid.setRecords(JSON.stringify(records));OfficeAndroid.setDisplaySettings(JSON.stringify(settings))}}
 function rowsClean(){return records.filter(r=>validDate(r.date)).map(r=>({...r,credits:Math.max(0,Number(r.credits)||0),duration:Math.max(0,Number(r.duration)||0)}))}
 function currentCycle(){return SCHEDULE.find(x=>x.id===settings.cycle)||SCHEDULE[SCHEDULE.length-1]}
 function windowInfo(){if(settings.mode==='official')return {...currentCycle(),asof:settings.asof,mode:'official'};return {start:dateOffset(settings.asof,-90),end:settings.asof,asof:settings.asof,pull:null,communication:null,mode:'rolling'}}
@@ -137,7 +137,7 @@ paint();
   const by=id=>document.getElementById(id);
   const isApp=typeof window.OfficeAndroid!=='undefined';
   for(const id of ['apkRecord','apkWidget','apkImport','apkBackup'])if(by(id))by(id).style.display=isApp?'':'none';
-  function refresh(){if(!isApp)return;try{const next=JSON.parse(OfficeAndroid.getRecords());if(Array.isArray(next)){records=next;storeLocal(KEY,JSON.stringify(records));settings.asof=isoToday();calMonth=settings.asof.slice(0,7);paint()}}catch(e){console.error(e)}}
+  function refresh(){if(!isApp)return;try{const next=JSON.parse(OfficeAndroid.getRecords());if(Array.isArray(next)){records=next;storeLocal(KEY,JSON.stringify(records));settings.asof=isoToday();calMonth=settings.asof.slice(0,7);paint();OfficeAndroid.setDisplaySettings(JSON.stringify(settings))}}catch(e){console.error(e)}}
   window.officeRefresh=refresh;
   if(by('apkRecord'))by('apkRecord').onclick=()=>{if(!isApp)return;const x=OfficeAndroid.recordToday();refresh();alert(x==='added'?'Today recorded (manual check-in).':x==='weekend'?'Saved; weekend days are not eligible.':'Already recorded for today.');};
   if(by('apkWidget'))by('apkWidget').onclick=()=>{if(isApp)OfficeAndroid.pinWidget()};
