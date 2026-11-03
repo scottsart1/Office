@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widgetRoot" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="16dp" android:background="@drawable/widget_bg">
+ <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+  <TextView android:id="@+id/widgetTitle" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="OFFICE LEDGER" android:textColor="#B8D8DC" android:textStyle="bold" android:textSize="11sp" android:letterSpacing="0.11"/>
+  <TextView android:id="@+id/widgetCount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0 / 20" android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="18sp"/>
+ </LinearLayout>
+ <TextView android:id="@+id/widgetSubtitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Rolling 13 weeks · weekday dates" android:textColor="#AFC8CE" android:textSize="11sp" android:layout_marginTop="5dp"/>
+ <TextView android:id="@+id/widgetButton" android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center" android:text="✓  RECORD TODAY" android:textColor="#102436" android:textStyle="bold" android:textSize="15sp" android:background="@drawable/mark_bg" android:layout_marginTop="12dp"/>
+ <TextView android:id="@+id/widgetLast" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Tap to record a manual check-in" android:textColor="#C7DDE0" android:textSize="10sp" android:layout_marginTop="10dp"/>
+</LinearLayout>
