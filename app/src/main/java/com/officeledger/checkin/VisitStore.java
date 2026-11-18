@@ -36,6 +36,15 @@ public final class VisitStore {
         for (int i=24;i<=28;i++) EXCLUSIONS.add("2025-11-"+i);
         for (int i=22;i<=31;i++) EXCLUSIONS.add("2025-12-"+i);
         EXCLUSIONS.add("2026-01-01"); EXCLUSIONS.add("2026-01-02");
+        // 2027 review cycles (Jan 27, 2027 – Jan 5, 2028 communications)
+        for (String s : new String[] {
+             "2027-01-01", "2027-01-18", "2027-02-15", "2027-05-31", "2027-06-18",
+             "2027-09-06", "2027-10-11", "2027-11-11"}) EXCLUSIONS.add(s);
+        for (int i=23;i<=27;i++) EXCLUSIONS.add("2026-11-"+i);
+        for (int i=21;i<=31;i++) EXCLUSIONS.add("2026-12-"+i);
+        for (int i=24;i<=27;i++) EXCLUSIONS.add("2027-05-"+i);
+        for (int i=5;i<=9;i++) EXCLUSIONS.add("2027-07-0"+i);
+        for (int i=22;i<=26;i++) EXCLUSIONS.add("2027-11-"+i);
     }
 
     private VisitStore() { }
@@ -143,6 +152,18 @@ public final class VisitStore {
             case "2026-08-26":return new String[]{"2026-05-18","2026-08-14"};
             case "2026-09-30":return new String[]{"2026-06-22","2026-09-18"};
             case "2026-10-28":return new String[]{"2026-07-20","2026-10-16"};
+            case "2027-01-27":return new String[]{"2026-10-19","2027-01-15"};
+            case "2027-02-24":return new String[]{"2026-11-16","2027-02-12"};
+            case "2027-03-31":return new String[]{"2026-12-21","2027-03-19"};
+            case "2027-04-28":return new String[]{"2027-01-18","2027-04-16"};
+            case "2027-05-26":return new String[]{"2027-02-15","2027-05-14"};
+            case "2027-06-30":return new String[]{"2027-03-22","2027-06-18"};
+            case "2027-07-28":return new String[]{"2027-04-19","2027-07-16"};
+            case "2027-08-25":return new String[]{"2027-05-17","2027-08-13"};
+            case "2027-09-29":return new String[]{"2027-06-21","2027-09-17"};
+            case "2027-10-27":return new String[]{"2027-07-19","2027-10-15"};
+            case "2027-12-01":return new String[]{"2027-08-16","2027-11-12"};
+            case "2028-01-05":return new String[]{"2027-09-20","2027-12-17"};
             default:return new String[]{"2026-08-17","2026-11-13"};
         }
     }
